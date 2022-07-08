@@ -109,6 +109,8 @@ class MetadataStatement implements JsonSerializable
 
     final public const ATTESTATION_ATTCA = 'attca';
 
+    final public const ATTESTATION_ANONCA = 'anonca';
+
     private ?string $legalHeader = null;
 
     private ?string $aaid = null;
