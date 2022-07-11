@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Webauthn\MetadataService\CertificateChain;
 
-use function array_slice;
 use Assert\Assertion;
 use function count;
 use DateTimeZone;
@@ -52,46 +51,48 @@ class PhpCertificateChainValidator implements CertificateChainValidator
      */
     public function check(array $untrustedCertificates, array $trustedCertificates): void
     {
-        $untrustedCertificates = array_map(
-            static fn (string $cert): Certificate => Certificate::fromPEM(PEM::fromString($cert)),
-            array_reverse($untrustedCertificates)
-        );
-        $trustedCertificates = array_map(
-            static fn (string $cert): Certificate => Certificate::fromPEM(PEM::fromString($cert)),
-            $trustedCertificates
-        );
-
-        // The trust path and the authenticator certificate are the same
-        if (count($trustedCertificates) === 1 && count($untrustedCertificates) === 1 && $untrustedCertificates[0] === $trustedCertificates[0]) {
-            return;
-        }
-        $uniqueCertificates = array_unique(array_merge($untrustedCertificates, $trustedCertificates));
-        Assertion::count(
-            $uniqueCertificates,
-            count($untrustedCertificates) + count($trustedCertificates),
-            'Invalid certificate chain with duplicated certificates.'
-        );
-
-        $certificates = [];
         foreach ($trustedCertificates as $trustedCertificate) {
-            if ($this->validateCertificates($trustedCertificate, ...$untrustedCertificates)) {
-                $certificates = array_merge([$trustedCertificate], $untrustedCertificates);
-                break;
-            }
-        }
-        if (count($certificates) === 0) {
-            throw new InvalidArgumentException('Unable to validate the certificate chain.');
-        }
-
-        $numCerts = count($certificates);
-        for ($i = 1; $i < $numCerts; $i++) {
-            if ($this->isRevoked($certificates[$i], ...array_slice($certificates, 0, $i))) {
-                throw new RuntimeException('Unable to validate the certificate chain.');
+            if ($this->validateChain($untrustedCertificates, $trustedCertificate)) {
+                return;
             }
         }
     }
 
-    public function isRevoked(Certificate $subject, Certificate ...$caCertificates): bool
+    public function validateChain(array $untrustedCertificates, string $trustedCertificate): bool
+    {
+        $untrustedCertificates = array_map(
+            static fn (string $cert): Certificate => Certificate::fromPEM(PEM::fromString($cert)),
+            array_reverse($untrustedCertificates)
+        );
+        $trustedCertificate = Certificate::fromPEM(PEM::fromString($trustedCertificate));
+
+        // The trust path and the authenticator certificate are the same
+        if (count($untrustedCertificates) === 1 && $untrustedCertificates[0] === $trustedCertificate) {
+            return true;
+        }
+        $uniqueCertificates = array_unique(array_merge($untrustedCertificates, [$trustedCertificate]));
+        Assertion::count(
+            $uniqueCertificates,
+            count($untrustedCertificates) + 1,
+            'Invalid certificate chain with duplicated certificates.'
+        );
+
+        if (! $this->validateCertificates($trustedCertificate, ...$untrustedCertificates)) {
+            return false;
+        }
+
+        $certificates = array_merge([$trustedCertificate], $untrustedCertificates);
+        $numCerts = count($certificates);
+        for ($i = 1; $i < $numCerts; $i++) {
+            if ($this->isRevoked($certificates[$i])) {
+                throw new RuntimeException('Unable to validate the certificate chain.');
+            }
+        }
+
+        return true;
+    }
+
+    public function isRevoked(Certificate $subject): bool
     {
         try {
             $csn = $subject->tbsCertificate()

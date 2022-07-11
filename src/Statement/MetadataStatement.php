@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Webauthn\MetadataService\Statement;
 
 use Assert\Assertion;
-use Webauthn\MetadataService\CertificateChain\CertificateToolbox;
 use const JSON_THROW_ON_ERROR;
 use JsonSerializable;
+use Webauthn\MetadataService\CertificateChain\CertificateToolbox;
 use Webauthn\MetadataService\Utils;
 
 class MetadataStatement implements JsonSerializable
