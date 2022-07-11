@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Webauthn\MetadataService\Statement;
 
 use Assert\Assertion;
+use Webauthn\MetadataService\CertificateChain\CertificateToolbox;
 use const JSON_THROW_ON_ERROR;
 use JsonSerializable;
 use Webauthn\MetadataService\Utils;
@@ -440,7 +441,7 @@ class MetadataStatement implements JsonSerializable
             }, $data['userVerificationDetails']),
             $data['matcherProtection'],
             $data['tcDisplay'],
-            $data['attestationRootCertificates']
+            CertificateToolbox::fixPEMStructures($data['attestationRootCertificates'])
         );
 
         $object->legalHeader = $data['legalHeader'] ?? null;
@@ -512,7 +513,7 @@ class MetadataStatement implements JsonSerializable
                 static fn (DisplayPNGCharacteristicsDescriptor $object): array => $object->jsonSerialize(),
                 $this->tcDisplayPNGCharacteristics
             ),
-            'attestationRootCertificates' => $this->attestationRootCertificates,
+            'attestationRootCertificates' => CertificateToolbox::fixPEMStructures($this->attestationRootCertificates),
             'ecdaaTrustAnchors' => array_map(
                 static fn (EcdaaTrustAnchor $object): array => $object->jsonSerialize(),
                 $this->ecdaaTrustAnchors

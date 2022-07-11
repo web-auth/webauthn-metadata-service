@@ -38,6 +38,7 @@ class PhpCertificateChainValidator implements CertificateChainValidator
         private readonly ClientInterface $client,
         private readonly RequestFactoryInterface $requestFactory,
         ?Clock $clock = null,
+        private readonly bool $allowFailures = true
     ) {
         if ($clock === null) {
             $clock = new SystemClock(new DateTimeZone('UTC'));
@@ -51,12 +52,34 @@ class PhpCertificateChainValidator implements CertificateChainValidator
      */
     public function check(array $untrustedCertificates, array $trustedCertificates): void
     {
-        $certificates = array_map(
+        $untrustedCertificates = array_map(
             static fn (string $cert): Certificate => Certificate::fromPEM(PEM::fromString($cert)),
-            array_merge(array_reverse($trustedCertificates), array_reverse($untrustedCertificates))
+            array_reverse($untrustedCertificates)
+        );
+        $trustedCertificates = array_map(
+            static fn (string $cert): Certificate => Certificate::fromPEM(PEM::fromString($cert)),
+            $trustedCertificates
         );
 
-        if (! $this->validateCertificates(...$certificates)) {
+        // The trust path and the authenticator certificate are the same
+        if (count($trustedCertificates) === 1 && count($untrustedCertificates) === 1 && $untrustedCertificates[0] === $trustedCertificates[0]) {
+            return;
+        }
+        $uniqueCertificates = array_unique(array_merge($untrustedCertificates, $trustedCertificates));
+        Assertion::count(
+            $uniqueCertificates,
+            count($untrustedCertificates) + count($trustedCertificates),
+            'Invalid certificate chain with duplicated certificates.'
+        );
+
+        $certificates = [];
+        foreach ($trustedCertificates as $trustedCertificate) {
+            if ($this->validateCertificates($trustedCertificate, ...$untrustedCertificates)) {
+                $certificates = array_merge([$trustedCertificate], $untrustedCertificates);
+                break;
+            }
+        }
+        if (count($certificates) === 0) {
             throw new InvalidArgumentException('Unable to validate the certificate chain.');
         }
 
@@ -80,6 +103,9 @@ class PhpCertificateChainValidator implements CertificateChainValidator
         try {
             $urls = $this->getCrlUrlList($subject);
         } catch (InvalidArgumentException $e) {
+            if ($this->allowFailures) {
+                return false;
+            }
             throw new InvalidArgumentException('Failed to get CRL distribution points: ' . $e->getMessage(), 0, $e);
         }
 
@@ -91,6 +117,9 @@ class PhpCertificateChainValidator implements CertificateChainValidator
                     return true;
                 }
             } catch (Throwable $e) {
+                if ($this->allowFailures) {
+                    return false;
+                }
                 throw new InvalidArgumentException(sprintf(
                     'Failed to retrieve CRL %s:' . PHP_EOL . '%s',
                     $url,
