@@ -72,10 +72,14 @@ class PhpCertificateChainValidator implements CertificateChainValidator
         if (count($untrustedCertificates) === 1 && $untrustedCertificates[0] === $trustedCertificate) {
             return true;
         }
-        $uniqueCertificates = array_unique(array_merge($untrustedCertificates, [$trustedCertificate]));
+        $uniqueCertificates = array_map(
+            static fn (Certificate $cert): string => $cert->toPEM()
+                ->string(),
+            array_merge($untrustedCertificates, [$trustedCertificate])
+        );
         Assertion::count(
-            $uniqueCertificates,
-            count($untrustedCertificates) + 1,
+            array_unique($uniqueCertificates),
+            count($uniqueCertificates),
             'Invalid certificate chain with duplicated certificates.'
         );
 
