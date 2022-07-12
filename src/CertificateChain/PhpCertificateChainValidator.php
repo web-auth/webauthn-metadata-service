@@ -56,6 +56,8 @@ class PhpCertificateChainValidator implements CertificateChainValidator
                 return;
             }
         }
+
+        throw new RuntimeException('Unable to validate the certificate chain.');
     }
 
     public function validateChain(array $untrustedCertificates, string $trustedCertificate): bool
@@ -85,7 +87,7 @@ class PhpCertificateChainValidator implements CertificateChainValidator
         $numCerts = count($certificates);
         for ($i = 1; $i < $numCerts; $i++) {
             if ($this->isRevoked($certificates[$i])) {
-                throw new RuntimeException('Unable to validate the certificate chain.');
+                throw new RuntimeException('Unable to validate the certificate chain. Revoked certificate found.');
             }
         }
 
@@ -139,8 +141,8 @@ class PhpCertificateChainValidator implements CertificateChainValidator
             $path->validate($config);
 
             return true;
-        } catch (Throwable $e) {
-            throw new InvalidArgumentException(sprintf('Failed to validate certificate: %s', $e->getMessage()), 0, $e);
+        } catch (Throwable) {
+            return false;
         }
     }
 
