@@ -69,8 +69,10 @@ class PhpCertificateChainValidator implements CertificateChainValidator
         $trustedCertificate = Certificate::fromPEM(PEM::fromString($trustedCertificate));
 
         // The trust path and the authenticator certificate are the same
-        if (count($untrustedCertificates) === 1 && $untrustedCertificates[0] === $trustedCertificate) {
-            return true;
+        if (count(
+            $untrustedCertificates
+        ) === 1 && $untrustedCertificates[0]->toPEM()->string() === $trustedCertificate->toPEM()->string()) {
+            return $this->validateCertificates(...$untrustedCertificates);
         }
         $uniqueCertificates = array_map(
             static fn (Certificate $cert): string => $cert->toPEM()
