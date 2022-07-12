@@ -72,7 +72,7 @@ class PhpCertificateChainValidator implements CertificateChainValidator
         if (count(
             $untrustedCertificates
         ) === 1 && $untrustedCertificates[0]->toPEM()->string() === $trustedCertificate->toPEM()->string()) {
-            return $this->validateCertificates(...$untrustedCertificates);
+            return true;
         }
         $uniqueCertificates = array_map(
             static fn (Certificate $cert): string => $cert->toPEM()
