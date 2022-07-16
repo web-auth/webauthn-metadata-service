@@ -138,6 +138,9 @@ final class FidoAllianceCompliantMetadataService implements MetadataService
         $this->loaded = true;
     }
 
+    /**
+     * @param array<string, mixed> $headerParameters
+     */
     private function fetch(string $uri, array $headerParameters): string
     {
         $request = $this->requestFactory->createRequest('GET', $uri);

@@ -16,13 +16,13 @@ use const PHP_URL_SCHEME;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use RuntimeException;
-use SpomkyLabs\Pki\ASN1\Type\Primitive\Integer;
 use SpomkyLabs\Pki\ASN1\Type\UnspecifiedType;
 use SpomkyLabs\Pki\CryptoEncoding\PEM;
 use SpomkyLabs\Pki\X509\Certificate\Certificate;
 use SpomkyLabs\Pki\X509\CertificationPath\CertificationPath;
 use SpomkyLabs\Pki\X509\CertificationPath\PathValidation\PathValidationConfig;
 use Throwable;
+use function Safe\parse_url;
 
 /**
  * @final
@@ -60,6 +60,9 @@ class PhpCertificateChainValidator implements CertificateChainValidator
         throw new RuntimeException('Unable to validate the certificate chain.');
     }
 
+    /**
+     * @param string[] $untrustedCertificates
+     */
     public function validateChain(array $untrustedCertificates, string $trustedCertificate): bool
     {
         $untrustedCertificates = array_map(
@@ -176,17 +179,14 @@ class PhpCertificateChainValidator implements CertificateChainValidator
             return array_map(static function (UnspecifiedType $r): string {
                 $sequence = $r->asSequence();
                 Assertion::minCount($sequence, 1, 'Invalid CRL.');
-                /** @var integer $sn */
-                $sn = $sequence->at(0)
-                    ->asInteger();
-
-                return $sn->number();
+                return $sequence->at(0)
+                    ->asInteger()->number();
             }, $list->elements());
         } catch (Throwable $e) {
             throw new InvalidArgumentException(sprintf(
                 'Failed to download CRL for certificate from %s',
                 $url
-            ), null, $e);
+            ), 0, $e);
         }
     }
 
