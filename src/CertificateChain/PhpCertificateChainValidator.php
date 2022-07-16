@@ -16,13 +16,13 @@ use const PHP_URL_SCHEME;
 use Psr\Http\Client\ClientInterface;
 use Psr\Http\Message\RequestFactoryInterface;
 use RuntimeException;
+use function Safe\parse_url;
 use SpomkyLabs\Pki\ASN1\Type\UnspecifiedType;
 use SpomkyLabs\Pki\CryptoEncoding\PEM;
 use SpomkyLabs\Pki\X509\Certificate\Certificate;
 use SpomkyLabs\Pki\X509\CertificationPath\CertificationPath;
 use SpomkyLabs\Pki\X509\CertificationPath\PathValidation\PathValidationConfig;
 use Throwable;
-use function Safe\parse_url;
 
 /**
  * @final
@@ -180,7 +180,8 @@ class PhpCertificateChainValidator implements CertificateChainValidator
                 $sequence = $r->asSequence();
                 Assertion::minCount($sequence, 1, 'Invalid CRL.');
                 return $sequence->at(0)
-                    ->asInteger()->number();
+                    ->asInteger()
+                    ->number();
             }, $list->elements());
         } catch (Throwable $e) {
             throw new InvalidArgumentException(sprintf(
