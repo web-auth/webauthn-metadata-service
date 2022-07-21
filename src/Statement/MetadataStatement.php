@@ -163,14 +163,14 @@ class MetadataStatement implements JsonSerializable
     private null|AuthenticatorGetInfo $authenticatorGetInfo = null;
 
     /**
-     * @param Version[]                           $upv
-     * @param string[]                            $authenticationAlgorithms
-     * @param string[]                            $publicKeyAlgAndEncodings
-     * @param string[]                            $attestationTypes
+     * @param Version[] $upv
+     * @param string[] $authenticationAlgorithms
+     * @param string[] $publicKeyAlgAndEncodings
+     * @param string[] $attestationTypes
      * @param VerificationMethodANDCombinations[] $userVerificationDetails
-     * @param string[]                            $matcherProtection
-     * @param string[]                            $tcDisplay
-     * @param string[]                            $attestationRootCertificates
+     * @param string[] $matcherProtection
+     * @param string[] $tcDisplay
+     * @param string[] $attestationRootCertificates
      */
     public function __construct(
         private readonly string $description,
