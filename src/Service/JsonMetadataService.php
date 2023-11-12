@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Webauthn\MetadataService\Service;
 
 use Psr\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\Serializer\SerializerInterface;
+use Webauthn\MetadataService\Denormalizer\MetadataStatementSerializerFactory;
 use Webauthn\MetadataService\Event\CanDispatchEvents;
 use Webauthn\MetadataService\Event\MetadataStatementFound;
 use Webauthn\MetadataService\Event\NullEventDispatcher;
@@ -12,11 +14,7 @@ use Webauthn\MetadataService\Exception\MissingMetadataStatementException;
 use Webauthn\MetadataService\Statement\MetadataStatement;
 use function array_key_exists;
 
-/**
- * @deprecated since 4.8.0 and will be removed in 5.0.0. Please use Webauthn\MetadataService\Service\JsonMetadataService instead.
- * @infection-ignore-all
- */
-final class StringMetadataService implements MetadataService, CanDispatchEvents
+final class JsonMetadataService implements MetadataService, CanDispatchEvents
 {
     /**
      * @var MetadataStatement[]
@@ -25,35 +23,25 @@ final class StringMetadataService implements MetadataService, CanDispatchEvents
 
     private EventDispatcherInterface $dispatcher;
 
-    public function __construct(string ...$statements)
-    {
-        foreach ($statements as $statement) {
-            $this->addStatements(MetadataStatement::createFromString($statement));
-        }
+    private readonly ?SerializerInterface $serializer;
+
+    /**
+     * @param string[] $statements
+     */
+    public function __construct(
+        array $statements,
+        ?SerializerInterface $serializer = null,
+    ) {
         $this->dispatcher = new NullEventDispatcher();
+        $this->serializer = $serializer ?? MetadataStatementSerializerFactory::create();
+        foreach ($statements as $statement) {
+            $this->addStatement($statement);
+        }
     }
 
     public function setEventDispatcher(EventDispatcherInterface $eventDispatcher): void
     {
         $this->dispatcher = $eventDispatcher;
-    }
-
-    public static function create(string ...$statements): self
-    {
-        return new self(...$statements);
-    }
-
-    public function addStatements(MetadataStatement ...$statements): self
-    {
-        foreach ($statements as $statement) {
-            $aaguid = $statement->aaguid;
-            if ($aaguid === null) {
-                continue;
-            }
-            $this->statements[$aaguid] = $statement;
-        }
-
-        return $this;
     }
 
     public function list(): iterable
@@ -73,5 +61,18 @@ final class StringMetadataService implements MetadataService, CanDispatchEvents
         $this->dispatcher->dispatch(MetadataStatementFound::create($mds));
 
         return $mds;
+    }
+
+    private function addStatement(string $statement): void
+    {
+        if ($this->serializer === null) {
+            $mds = MetadataStatement::createFromString($statement);
+        } else {
+            $mds = $this->serializer->deserialize($statement, MetadataStatement::class, 'json');
+        }
+        if ($mds->aaguid === null) {
+            return;
+        }
+        $this->statements[$mds->aaguid] = $mds;
     }
 }
