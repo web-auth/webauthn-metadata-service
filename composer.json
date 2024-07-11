@@ -2,7 +2,7 @@
     "name": "web-auth/metadata-service",
     "type": "library",
     "license": "MIT",
-    "description": "Metadata Service for FIDO2/Webauthn",
+    "description": "[DEPRECATED] Please use 'web-auth/webauthn-lib' instead",
     "keywords": [
         "FIDO",
         "FIDO2",
@@ -20,36 +20,12 @@
         }
     ],
     "require": {
-        "php": ">=8.1",
-        "ext-json": "*",
-        "lcobucci/clock": "^2.2|^3.0",
-        "paragonie/constant_time_encoding": "^2.6|^3.0",
-        "psr/clock": "^1.0",
-        "psr/event-dispatcher": "^1.0",
-        "psr/http-client": "^1.0",
-        "psr/http-factory": "^1.0",
-        "psr/log": "^1.0|^2.0|^3.0",
-        "spomky-labs/pki-framework": "^1.0",
-        "symfony/deprecation-contracts": "^3.2"
-    },
-    "autoload": {
-        "psr-4": {
-            "Webauthn\\MetadataService\\": "src/"
-        }
+        "web-auth/webauthn-lib": "^4.9"
     },
     "extra": {
         "thanks": {
             "name": "web-auth/webauthn-framework",
             "url": "https://github.com/web-auth/webauthn-framework"
         }
-    },
-    "suggest": {
-        "symfony/serializer": "As of 4.5.x, the symfony/serializer component will become mandatory for converting objects such as the Metadata Statement",
-        "symfony/property-access": "As of 4.5.x, the symfony/serializer component will become mandatory for converting objects such as the Metadata Statement",
-        "symfony/property-info": "As of 4.5.x, the symfony/serializer component will become mandatory for converting objects such as the Metadata Statement",
-        "phpdocumentor/reflection-docblock": "As of 4.5.x, the phpdocumentor/reflection-docblock component will become mandatory for converting objects such as the Metadata Statement",
-        "psr/clock-implementation": "As of 4.5.x, the PSR Clock implementation will replace lcobucci/clock",
-        "psr/log-implementation": "Recommended to receive logs from the library",
-        "web-token/jwt-library": "Mandatory for fetching Metadata Statement from distant sources"
     }
 }
